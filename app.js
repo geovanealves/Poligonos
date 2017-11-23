@@ -1,10 +1,12 @@
 function initMap() {
+
     map = new google.maps.Map(document.getElementById('map'), {
         center: { lat: -34.397, lng: 150.644 },
         zoom: 8
     });
 
-    
+    map.setOptions({draggableCursor:'crosshair'});
+
     var myLatLng = {lat: -25.363, lng: 131.044};
     
      
@@ -41,6 +43,7 @@ function initMap() {
     map.addListener('click', addLatLng);
 
     function addLatLng(event) {
+        
 
         var path = poly.getPath();
         path.push(event.latLng);
@@ -60,6 +63,8 @@ function initMap() {
                           
             var lados = [];
 
+            debugger
+
             for (var i = 0; i < poly.getPath().getLength(); i++) {
                 lados.push({ 
                     lat: poly.getPath().getAt(i).lat(), 
@@ -74,7 +79,7 @@ function initMap() {
                 strokeWeight: 2,
                 fillColor: '#FF0000',
                 fillOpacity: 0.35,
-                editable: true
+                editable: false
             });
             bermudaTriangle.setMap(map);
             
@@ -86,6 +91,11 @@ function initMap() {
             }
 
         }
+    }
+
+
+    function verificarPontoMaisProximo(){
+
     }
 }
 
