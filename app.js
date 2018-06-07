@@ -1,185 +1,235 @@
+cache = {};
+
 function initMap() {
-
-  map = new google.maps.Map(document.getElementById('map'), {
-    center: { lat: -34.397, lng: 150.644 },
-    zoom: 4
-  });
-
-  map.setOptions({ draggableCursor: 'crosshair' });
-
-  markers = [];
-  markersDentro = [];
-  vertices = [];
-  objetoMaior = null;
-  segundoObjetoMaior = null;
-
-  var myLatLng = { lat: -25.363, lng: 131.044 };
-
-
-  for (var i = 0; i < 220; i++) {
-    var myLatLng = { lat: (-20.363 + (i * 0.020)), lng: (129.044 + (i * 0.1)) };
-
-    var marker = new google.maps.Marker({
-      position: myLatLng,
-      map: map,
-      title: 'Hello World!'
+    cache.vertices = [];
+    cache.map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: -34.397, lng: 150.644 },
+        zoom: 8
     });
 
-    marker.setMap(map);
-    markers.push(marker);
-  }
-
-  poly = new google.maps.Polyline({
-    strokeColor: '#000000',
-    strokeOpacity: 1.0,
-    strokeWeight: 3
-  });
-
-  poly.setMap(map);
-  map.addListener('click', addLatLng);
-
-  function addLatLng(event) {
-
-    var path = poly.getPath();
-    path.push(event.latLng);
-
-    var marker = new google.maps.Marker({
-      position: event.latLng,
-      title: '#' + path.getLength(),
-      map: map,
-      draggable: true
+    cache.poly = new google.maps.Polyline({
+        strokeColor: '#FF0000',
+        strokeOpacity: 1.0,
+        strokeWeight: 3
+    });
+    cache.polygon = new google.maps.Polygon({
+        strokeColor: '#FF0000',
+        strokeOpacity: 0.8,
+        strokeWeight: 3,
+        fillColor: '#FF0000',
+        fillOpacity: 0.35
     });
 
-    if (path.getLength() == 3) {
+    cache.map.addListener('click', adicionarPoligano);
 
-      if (typeof bermudaTriangle != 'undefined') {
-        //google.maps.geometry.poly.containsLocation(event.latLng, bermudaTriangle);
-        //bermudaTriangle.setMap(null);
-      }
+    cache.poly.setMap(cache.map);
 
-      
+    google.maps.LatLng.prototype.latRadians = function () {
+        return (Math.PI * this.lat()) / 180;
+    }
 
-      for (var i = 0; i < poly.getPath().getLength(); i++) {
-        vertices.push(
-          new google.maps.LatLng(poly.getPath().getAt(i).lat(), poly.getPath().getAt(i).lng())
-        );
-      }
+    google.maps.LatLng.prototype.lngRadians = function () {
+        return (Math.PI * this.lng()) / 180;
+    }
 
-      mvc = new google.maps.MVCArray(vertices);
-      
-        bermudaTriangle = new google.maps.Polygon({
-          paths: mvc,
-          strokeColor: '#FF0000',
-          strokeOpacity: 0.8,
-          strokeWeight: 2,
-          fillColor: '#FF0000',
-          fillOpacity: 0.35,
-          editable: false
-        });
-        bermudaTriangle.setMap(map);
-        poly.setVisible(false);
-      }else if (path.getLength() > 3) {
-        cliqueMaisQue4(event);
-     }    
-    
-  }
+    // google.maps.Polygon.prototype.getBounds = function (latLng) {
+    //     var bounds = new google.maps.LatLngBounds();
+    //     var paths = this.getPaths();
+    //     var path;
+    //     for (var p = 0; p < paths.getLength(); p++) {
+    //         path = paths.getAt(p);
+    //         for (var i = 0; i < path.getLength(); i++) {
+    //             bounds.extend(path.getAt(i));
+    //         }
+    //     }
+    //     return bounds;
+    // }
 }
 
-function cliqueMaisQue4(event) {
-  var distancia = 0;
-  var ultimaCoordenadClicada = new google.maps.LatLng(event.latLng.lat(), event.latLng.lng());
-  var vertice;
-    for (var i = 0; i < vertices.length; i++) {
-      if(i == vertices.length - 1){
-        vertice = new google.maps.LatLng(event.latLng.lat(), event.latLng.lng());
-        distancia = 100000000000000;
-      }else{
-        vertice = new google.maps.LatLng(vertices[i].lat(), vertices[i].lng());
-        distancia = google.maps.geometry.spherical.computeDistanceBetween(vertice, ultimaCoordenadClicada);
-        distancia = parseFloat((distancia * 0.001).toFixed(1));
-      }
-      
-      //debugger
+function adicionarPoligano(event) {
+    var path = cache.poly.getPath();
+    var marker = new google.maps.Marker({
+        position: event.latLng,
+        title: '#',
+        map: cache.map
+    });
 
-      if (distancia != 0) {
-        if (objetoMaior == null) {
-          objetoMaior = {
-            distancia: distancia,
-            vertice: vertice,
-            indice: i + 1
-          }
-        } else {
-          if (objetoMaior.distancia > distancia) {
-            segundoObjetoMaior = objetoMaior;
-            objetoMaior = {
-              distancia: distancia,
-              vertice: vertice,//new google.maps.LatLng(vertices[i].lat(), vertices[i].lng()),
-              indice: i + 1
-            }
-          } else {
-            if (segundoObjetoMaior == null) {
-              segundoObjetoMaior = {
-                distancia: distancia,
-                vertice: vertice,//new google.maps.LatLng(vertices[i].lat(), vertices[i].lng()),
-                indice: i + 1
-              }
-            } else if (segundoObjetoMaior.distancia > distancia) {
-              segundoObjetoMaior = {
-                distancia: distancia,
-                vertice: vertice,//new google.maps.LatLng(vertices[i].lat(), vertices[i].lng()),
-                indice: i + 1
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    if (objetoMaior.indice < segundoObjetoMaior.indice) {
-      bermudaTriangle.getPath().insertAt(objetoMaior.indice, new google.maps.LatLng(event.latLng.lat(), event.latLng.lng()));//segundoObjetoMaior.vertice);
+
+    var menorDistancia = {};
+
+    if (cache.vertices.length < 2) {
+        path.push(event.latLng);
+        cache.vertices.push(event.latLng);
+    } else if (cache.vertices.length == 2) {
+        cache.vertices.push(event.latLng);
+        cache.polygon.setPath(cache.vertices);
+        cache.polygon.setMap(cache.map);
+        cache.poly.setMap(null);
     } else {
-      bermudaTriangle.getPath().insertAt(segundoObjetoMaior.indice, new google.maps.LatLng(event.latLng.lat(), event.latLng.lng()));//objetoMaior.vertice);
+        for (var i = 0; i < cache.vertices.length; i++) {
+            if (i == 0) {
+                menorDistancia = {
+                    distancia: calcularDistancia(event.latLng, cache.vertices[i]),
+                    indice: i
+                }
+
+            } else {
+                var distancia = calcularDistancia(event.latLng, cache.vertices[i]);
+
+                if (menorDistancia.distancia > distancia) {
+                    menorDistancia = {
+                        distancia: distancia,
+                        indice: i
+                    }
+                }
+            }
+        }
+
+        var indexInserir;
+        var primeiroPontoLinha;
+        var segundoPontoLinha;
+
+        if (menorDistancia.indice == 0) {
+            primeiroPontoLinha = {
+                distancia: calcularDistancia(event.latLng, cache.vertices[cache.vertices.length - 1]),
+                indice: cache.vertices.length - 1
+            }
+            segundoPontoLinha = {
+                distancia: calcularDistancia(event.latLng, cache.vertices[menorDistancia.indice + 1]),
+                indice: menorDistancia.indice + 1
+            }
+        } else if (menorDistancia.indice == cache.vertices.length - 1) {
+            primeiroPontoLinha = {
+                distancia: calcularDistancia(event.latLng, cache.vertices[menorDistancia.indice - 1]),
+                indice: menorDistancia.indice - 1
+            }
+            segundoPontoLinha = {
+                distancia: calcularDistancia(event.latLng, cache.vertices[0]),
+                indice: 0
+            }
+        } else {
+            primeiroPontoLinha = {
+                distancia: calcularDistancia(event.latLng, cache.vertices[menorDistancia.indice - 1]),
+                indice: menorDistancia.indice - 1
+            }
+            segundoPontoLinha = {
+                distancia: calcularDistancia(event.latLng, cache.vertices[menorDistancia.indice + 1]),
+                indice: menorDistancia.indice + 1
+            }
+        }
+
+        var indexAnterior = primeiroPontoLinha.indice;
+
+        if (primeiroPontoLinha.distancia < segundoPontoLinha.distancia) {
+            var angulo = buscarAngulo(cache.vertices[primeiroPontoLinha.indice], event.latLng);
+
+            var latAux = cache.vertices[primeiroPontoLinha.indice].lat() + (0.000001 * Math.cos(Math.PI * angulo / 180));
+            var lonAux = cache.vertices[primeiroPontoLinha.indice].lng() + (0.000001 * Math.sin(Math.PI * angulo / 180));
+
+            if (verificarPassaDentroPoligano(cache.polygon, new google.maps.LatLng(latAux, lonAux))) {
+                if (segundoPontoLinha.indice == indexAnterior) {
+                    indexInserir = segundoPontoLinha.indice + 1;
+                } else {
+                    indexInserir = segundoPontoLinha.indice;
+                }
+            } else {
+                if (primeiroPontoLinha.indice == indexAnterior) {
+                    indexInserir = primeiroPontoLinha.indice + 1;
+                } else {
+                    indexInserir = primeiroPontoLinha.indice;
+                }
+            }
+        } else {
+            var angulo = buscarAngulo(cache.vertices[segundoPontoLinha.indice], event.latLng);
+
+            var latAux = cache.vertices[segundoPontoLinha.indice].lat() + (0.000001 * Math.cos(Math.PI * angulo / 180));
+            var lonAux = cache.vertices[segundoPontoLinha.indice].lng() + (0.000001 * Math.sin(Math.PI * angulo / 180));
+
+            if (verificarPassaDentroPoligano(cache.polygon, new google.maps.LatLng(latAux, lonAux))) {
+                if (primeiroPontoLinha.indice == indexAnterior) {
+                    indexInserir = primeiroPontoLinha.indice + 1;
+                }else{
+                    indexInserir = primeiroPontoLinha.indice;
+                }
+            } else {
+                if (segundoPontoLinha.indice == indexAnterior) {
+                    indexInserir = segundoPontoLinha.indice + 1;
+                } else {
+                    indexInserir = segundoPontoLinha.indice;
+                }
+            }
+        }
+
+        var path = cache.polygon.getPath();
+
+        cache.vertices.splice(indexInserir, 0, event.latLng);
+        path.insertAt(indexInserir, event.latLng);
     }
 }
 
+var rad = function (x) {
+    return x * Math.PI / 180;
+};
 
-function verificarMarkers(){
-  for (var i = 0; i < markers.length; i++) {
-    var estaDentro = google.maps.geometry.poly.containsLocation(markers[i].getPosition(), bermudaTriangle);
-    if (estaDentro) {
-      markersDentro.push(markers[i]);
-    }
-  }
+var calcularDistancia = function (p1, p2) {
+
+    var R = 6378137; // Earth’s mean radius in meter
+    var dLat = rad(p2.lat() - p1.lat());
+    var dLong = rad(p2.lng() - p1.lng());
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(rad(p1.lat())) * Math.cos(rad(p2.lat())) *
+        Math.sin(dLong / 2) * Math.sin(dLong / 2);
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    var d = R * c;
+    return d; // returns the distance in meter
+};
+
+var buscarAngulo = function (from, to) {//É USADO
+    // See T. Vincenty, Survey Review, 23, No 176, p 88-93,1975.
+    // Convert to radians.
+    var lat1 = from.latRadians();
+    var lon1 = from.lngRadians();
+    var lat2 = to.latRadians();
+    var lon2 = to.lngRadians();
+
+    // Compute the angle.
+    var angle = - Math.atan2(Math.sin(lon1 - lon2) * Math.cos(lat2), Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon1 - lon2));
+    if (angle < 0.0)
+        angle += Math.PI * 2.0;
+
+    var degreesPerRadian = 180.0 / Math.PI;
+
+    // And convert result to degrees.
+    angle = angle * degreesPerRadian;
+    angle = angle.toFixed(1);
+
+    return angle;
 }
-// function initMap() {
-//     var map = new google.maps.Map(document.getElementById('map'), {
-//       zoom: 5,
-//       center: {lat: 24.886, lng: -70.268},
-//       mapTypeId: 'terrain'
-//     });
 
-//     var bounds = new google.maps.LatLngBounds();
-//     var triangleCoords = [
-//       new google.maps.LatLng(25.774252, -80.190262),
-//       new google.maps.LatLng(18.466465, -66.118292),
-//       new google.maps.LatLng(32.321384, -64.75737)
-//     ];
-
-//     mvc = new google.maps.MVCArray(triangleCoords);
-
-
-
-//     bermudaTriangle = new google.maps.Polygon({
-//       paths: mvc,
-//       strokeColor: '#FF0000',
-//       strokeOpacity: 0.8,
-//       strokeWeight: 2,
-//       fillColor: '#FF0000',
-//       fillOpacity: 0.35
-//     });
-//     bermudaTriangle.setMap(map);
-
-//   }
-
-
-
+var verificarPassaDentroPoligano = function (polygon, latLng) {
+    var lat = latLng.lat();
+    var lng = latLng.lng();
+    var paths = polygon.getPaths();
+    var path, pathLength, inPath, i, j, vertex1, vertex2;
+ 
+    for (var p = 0; p < paths.getLength(); p++) {
+        path = paths.getAt(p);
+        pathLength = path.getLength();
+        j = pathLength - 1;
+        inPath = false;
+        for (i = 0; i < pathLength; i++) {
+            vertex1 = path.getAt(i);
+            vertex2 = path.getAt(j);
+            if (vertex1.lng() < lng && vertex2.lng() >= lng || vertex2.lng() < lng && vertex1.lng() >= lng) {
+                if (vertex1.lat() + (lng - vertex1.lng()) / (vertex2.lng() - vertex1.lng()) * (vertex2.lat() - vertex1.lat()) < lat) {
+                    inPath = !inPath;
+                }
+            }
+            j = i;
+        }
+        if (inPath) {
+            return true;
+        }
+    }
+    return false;
+}
